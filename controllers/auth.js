@@ -4,38 +4,39 @@ const passport = require('passport');
 
 const User = require('../models/User');
 
-// Saves user to database, retruns
-// confirmation string along with a token
-const signUp = async (req, res) => {
-  // Create new user object
-  const user = await new User();
-
-  user.fullName = req.body.fullName;
-  user.email = req.body.email;
-  user.password = req.body.password;
-
-  // Save new user check for errors,
-  // if no errors create and send token
-  await user.save((err, savedUser) => {
-    if (err) {
-      console.log(err);
-      return res.json({ err }).status(500);
-    } else {
-      const payload = { subject: savedUser };
-      const token = jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXP }
-      );
-
-      return res.json({ token }).status(200);
-    }
-  });
+/**
+ * Saves User to MongoDB afterwards
+ * it returns a 201 status with an object containing 
+ * a valid JWT token.
+ */
+module.exports.signUp = async (req, res) => {
+  try {
+    // Destructure incoming user data from request body object.
+    const { fullname, email, password } = req.body;
+    // Instantiate a new User object.
+    const user = new User({ fullname, email, password });
+    // Save the User object to MongoDB.
+    await user.save(); 
+    const payload = { subject: user };
+    const token = jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXP }
+    );
+      /**
+       * Returns a 201 status to confirm Resource Creation and writes token string to an object
+       */
+    return res.status(201).json({ token: token })
+  } catch (error) {
+    // print out any errors that occur.
+    console.log(error.message);
+    return res.status(500).send(error.message);
+  }
 };
 
 // Authorizes a previously registered user,
 // return a token
-const logIn = async (req, res) => {
+module.exports.logIn = async (req, res) => {
   await passport.authenticate(
     'local',
     (err, user, data) => {
@@ -58,10 +59,4 @@ const logIn = async (req, res) => {
     }
   ),
     (req, res);
-};
-
-// Export Auth functions
-module.module.exports = {
-  signUp,
-  logIn
 };
