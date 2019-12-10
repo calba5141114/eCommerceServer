@@ -5,6 +5,14 @@ const passport = require('passport');
 const User = require('../models/User');
 
 /**
+ * This method of routing works but I would say
+ * use the built in Express Router since it provides 
+ * rich documentation which in turn provides rich intellisense
+ * to your IDE of choice.
+ */
+
+
+/**
  * Saves User to MongoDB afterwards
  * it returns a 201 status with an object containing 
  * a valid JWT token.
@@ -34,29 +42,21 @@ module.exports.signUp = async (req, res) => {
   }
 };
 
-// Authorizes a previously registered user,
-// return a token
+/**
+ * Authorizes a previously registered user 
+ * and returns an 200 status as well as an object 
+ * containing a valid JWT.
+ */
 module.exports.logIn = async (req, res) => {
-  await passport.authenticate(
-    'local',
-    (err, user, data) => {
-      if (err) {
-        console.log(err);
-        return res.json({ err }).status(500);
-      }
-
+  await passport.authenticate('local', (error, user, data) => {
+      if (error) return res.status(500).send(error.message);
       if (user) {
         const payload = { subject: user };
-        const token = jwt.sign(
-          payload,
-          process.env.JWT_SECRET,
-          { expiresIn: JWT_EXP }
-        );
-        res.json({ token }).status(200);
-      } else {
-        return res.json({ data }).status(401);
+        const token = jwt.sign(payload, process.env.JWT_SECRET,{ expiresIn: JWT_EXP });
+        return res.status(200).json({ token: token })
       }
+      return res.status(401).json({ data });
     }
-  ),
-    (req, res);
+  ),(req, res);
+  // left this bottom section unmodified since idk what it does.
 };
